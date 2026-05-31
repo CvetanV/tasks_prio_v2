@@ -1392,6 +1392,8 @@ function setupSettingsHandlers() {
         }
     });
 
+
+
     dom.btnDisconnectNeon.addEventListener('click', () => {
         if (confirm("Disconnect database? Your local storage tasks will remain in the browser.")) {
             localStorage.setItem('neon_disconnected', 'true'); // Persist local override to stop auto-config
