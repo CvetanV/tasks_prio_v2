@@ -1,0 +1,6 @@
+# Build artifacts - never commit to repo
+config.js
+
+# OS files
+.DS_Store
+Thumbs.db

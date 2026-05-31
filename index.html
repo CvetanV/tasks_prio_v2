@@ -231,13 +231,20 @@
                         <!-- Neon DB Sync Settings -->
                         <div class="settings-card">
                             <h3><i data-lucide="database"></i> Neon DB PostgreSQL Integration</h3>
-                            <p class="card-description">Synchronize your tasks directly with your Neon DB serverless instance. Credentials are securely stored only in your browser's local storage.</p>
+                            
+                            <!-- Build-time config status banner -->
+                            <div class="conn-feedback hidden" id="build-config-banner">
+                                <i data-lucide="shield-check" class="inline-icon"></i>
+                                <span>Connection auto-configured from GitHub Secrets at deploy time.</span>
+                            </div>
+                            
+                            <p class="card-description" id="neon-settings-description">Synchronize your tasks directly with your Neon DB serverless instance. Credentials are securely injected via GitHub Secrets at deploy time, or you can manually configure the connection below.</p>
                             
                             <form id="neon-settings-form" class="settings-form">
                                 <div class="form-group">
-                                    <label for="neon-conn-string">Neon DB Connection String</label>
+                                    <label for="neon-conn-string">Neon DB Connection String <span class="help-text">(manual override)</span></label>
                                     <input type="password" id="neon-conn-string" class="form-control" placeholder="postgres://user:password@ep-xxxx.neon.tech/neondb?sslmode=require">
-                                    <span class="help-text">Direct Connection URI from Neon Dashboard (ensure SSL mode is required).</span>
+                                    <span class="help-text">Only needed if not using GitHub Secrets. Stored in your browser's local storage.</span>
                                 </div>
                                 <div class="form-actions-inline">
                                     <button type="button" class="btn btn-secondary" id="btn-test-neon">Test Connection</button>
@@ -338,6 +345,9 @@
         </div>
     </div>
 
+    <!-- Build-time config injected by GitHub Actions (contains Neon DB connection from GitHub Secrets) -->
+    <!-- This file does NOT exist in the repo — it's generated at deploy time only -->
+    <script src="config.js" onerror="window.__NEON_CONFIG__=null;"></script>
     <!-- Custom JS -->
     <script src="app.js"></script>
 </body>

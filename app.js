@@ -12,9 +12,38 @@ let activeTab = 'dashboard';
 let charts = {};
 let activeTimerInterval = null;
 
-// Neon DB connection parameters (saved in localStorage for privacy)
-let neonConnectionString = localStorage.getItem('neon_connection_string') || '';
+// Neon DB connection parameters
+// Priority: 1. Build-time injection from GitHub Secrets (config.js)
+//           2. Manual override saved in localStorage
+let neonConnectionString = '';
+let neonSourceMode = 'none'; // 'build', 'manual', or 'none'
 let isNeonConnected = false;
+
+// Resolve connection string source
+function resolveNeonConnectionString() {
+    // Check if user explicitly disconnected (manual fallback override)
+    if (localStorage.getItem('neon_disconnected') === 'true') {
+        neonConnectionString = '';
+        neonSourceMode = 'none';
+        return;
+    }
+
+    // Check build-time config first (injected by GitHub Actions from Secrets)
+    if (window.__NEON_CONFIG__ && window.__NEON_CONFIG__.connectionString) {
+        neonConnectionString = window.__NEON_CONFIG__.connectionString;
+        neonSourceMode = 'build';
+        return;
+    }
+    // Fall back to localStorage (manual Settings page input)
+    const stored = localStorage.getItem('neon_connection_string');
+    if (stored) {
+        neonConnectionString = stored;
+        neonSourceMode = 'manual';
+        return;
+    }
+    neonConnectionString = '';
+    neonSourceMode = 'none';
+}
 
 // 2. DOM ELEMENTS
 const dom = {
@@ -80,7 +109,8 @@ const dom = {
     neonFeedback: document.getElementById('neon-conn-feedback'),
     dbIndicator: document.getElementById('db-status-indicator'),
     btnArchiveTasks: document.getElementById('btn-archive-tasks'),
-    btnClearAll: document.getElementById('btn-clear-all-tasks')
+    btnClearAll: document.getElementById('btn-clear-all-tasks'),
+    buildConfigBanner: document.getElementById('build-config-banner')
 };
 
 // 3. NEON DB CLIENT LAYER
@@ -1292,7 +1322,16 @@ function triggerDownload(content, fileName, contentType) {
 
 // 13. SETTINGS & CONFLICT RESOLUTION
 function setupSettingsHandlers() {
-    dom.neonConnStringInput.value = neonConnectionString;
+    // Show/hide build-time config banner based on source mode
+    if (neonSourceMode === 'build') {
+        dom.buildConfigBanner.classList.remove('hidden');
+        dom.neonConnStringInput.placeholder = "Auto-configured via GitHub Secrets (Active)";
+        dom.neonConnStringInput.value = ''; // Let placeholder show
+    } else {
+        dom.buildConfigBanner.classList.add('hidden');
+        dom.neonConnStringInput.placeholder = "postgres://user:password@ep-xxxx.neon.tech/neondb?sslmode=require";
+        dom.neonConnStringInput.value = neonConnectionString;
+    }
     
     dom.neonForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1307,8 +1346,10 @@ function setupSettingsHandlers() {
         dom.neonFeedback.className = "conn-feedback";
         dom.neonFeedback.classList.remove('hidden');
         
+        localStorage.removeItem('neon_disconnected'); // Clear any explicit disconnect override
         neonConnectionString = connStr;
         localStorage.setItem('neon_connection_string', connStr);
+        neonSourceMode = 'manual';
         
         const ok = await initializeNeonSchema();
         if (ok) {
@@ -1320,12 +1361,13 @@ function setupSettingsHandlers() {
             dom.neonFeedback.className = "conn-feedback error";
             neonConnectionString = '';
             localStorage.removeItem('neon_connection_string');
+            neonSourceMode = 'none';
             isNeonConnected = false;
         }
     });
     
     dom.btnTestNeon.addEventListener('click', async () => {
-        const connStr = dom.neonConnStringInput.value.trim();
+        const connStr = dom.neonConnStringInput.value.trim() || (neonSourceMode === 'build' ? neonConnectionString : '');
         if (!connStr) return alert("Connection URI is empty");
         
         dom.neonFeedback.textContent = "Testing direct TCP/HTTP tunnel...";
@@ -1348,11 +1390,15 @@ function setupSettingsHandlers() {
     
     dom.btnDisconnectNeon.addEventListener('click', () => {
         if (confirm("Disconnect database? Your local storage tasks will remain in the browser.")) {
+            localStorage.setItem('neon_disconnected', 'true'); // Persist local override to stop auto-config
             neonConnectionString = '';
             localStorage.removeItem('neon_connection_string');
             dom.neonConnStringInput.value = '';
+            dom.neonConnStringInput.placeholder = "postgres://user:password@ep-xxxx.neon.tech/neondb?sslmode=require";
             isNeonConnected = false;
+            neonSourceMode = 'none';
             dom.neonFeedback.classList.add('hidden');
+            dom.buildConfigBanner.classList.add('hidden');
             loadTasks();
         }
     });
@@ -1479,6 +1525,9 @@ function renderApp() {
 }
 
 async function init() {
+    // Resolve Neon database credentials
+    resolveNeonConnectionString();
+
     setupGlobalEvents();
     setupCSVHandlers();
     setupSettingsHandlers();
