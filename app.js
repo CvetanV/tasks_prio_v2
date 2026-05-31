@@ -123,7 +123,9 @@ async function queryNeon(sql, params = []) {
     // Parse host from connection string
     const hostMatch = neonConnectionString.match(/@([^/\s?]+)/);
     if (!hostMatch) throw new Error("Invalid connection string format.");
-    const dbHost = hostMatch[1];
+
+    let dbHost = hostMatch[1];
+    dbHost = dbHost.replace('-pooler', '');
 
     const url = `https://${dbHost}/sql`;
 
