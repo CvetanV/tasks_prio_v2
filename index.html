@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prioritized Task Manager v2</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- ApexCharts for modern charts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i data-lucide="check-square" class="logo-icon"></i>
+                    <span>PrioTask <span class="version">v2</span></span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-tab="dashboard">
+                    <i data-lucide="bar-chart-3"></i><span>Dashboard</span>
+                </button>
+                <button class="nav-btn" data-tab="kanban">
+                    <i data-lucide="kanban-square"></i><span>Kanban Board</span>
+                </button>
+                <button class="nav-btn" data-tab="timeline">
+                    <i data-lucide="calendar"></i><span>Timeline</span>
+                </button>
+                <button class="nav-btn" data-tab="dependencies">
+                    <i data-lucide="git-branch"></i><span>Dependencies</span>
+                </button>
+                <button class="nav-btn" data-tab="sync">
+                    <i data-lucide="file-input"></i><span>Import/Export</span>
+                </button>
+                <button class="nav-btn" data-tab="settings">
+                    <i data-lucide="settings"></i><span>Settings</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="status-indicator local" id="db-status-indicator">
+                    <span class="indicator-dot"></span>
+                    <span class="status-text">Local Storage</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <h1 id="page-title">Dashboard</h1>
+                    <p class="header-subtitle" id="page-subtitle">Visual overview of your task prioritization statistics</p>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" id="btn-quick-add">
+                        <i data-lucide="plus"></i> New Task
+                    </button>
+                </div>
+            </header>
+
+            <!-- Scrollable Page Container -->
+            <div class="page-container">
+                <!-- 1. DASHBOARD PAGE -->
+                <section class="page-section active" id="page-dashboard">
+                    <!-- Metric Cards -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-icon total"><i data-lucide="list-todo"></i></div>
+                            <div class="metric-info">
+                                <span class="metric-label">Total Tasks</span>
+                                <h3 class="metric-value" id="metric-total">0</h3>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon done"><i data-lucide="check-circle-2"></i></div>
+                            <div class="metric-info">
+                                <span class="metric-label">Completed</span>
+                                <h3 class="metric-value" id="metric-done">0</h3>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon progress"><i data-lucide="play-circle"></i></div>
+                            <div class="metric-info">
+                                <span class="metric-label">In Progress</span>
+                                <h3 class="metric-value" id="metric-progress">0</h3>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon blocked"><i data-lucide="alert-octagon"></i></div>
+                            <div class="metric-info">
+                                <span class="metric-label">Blocked</span>
+                                <h3 class="metric-value" id="metric-blocked">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="charts-grid">
+                        <div class="chart-card card-full">
+                            <h3>Tasks by Status per Group</h3>
+                            <div id="chart-status-group" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Tasks by Group</h3>
+                            <div id="chart-group" class="chart-container"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Tasks by Priority</h3>
+                            <div id="chart-priority" class="chart-container"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. KANBAN BOARD PAGE -->
+                <section class="page-section" id="page-kanban">
+                    <!-- Kanban Filters -->
+                    <div class="filter-bar">
+                        <div class="filter-group">
+                            <label for="filter-group-select">Group</label>
+                            <select id="filter-group-select" class="form-control select-multiple" multiple></select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-grade-select">Priority Grade</label>
+                            <select id="filter-grade-select" class="form-control select-multiple" multiple>
+                                <option value="A - Critical">A - Critical</option>
+                                <option value="B - Important">B - Important</option>
+                                <option value="C - Medium">C - Medium</option>
+                                <option value="D - Low">D - Low</option>
+                            </select>
+                        </div>
+                        <div class="filter-group search-group">
+                            <label for="search-tasks">Search Title/Notes</label>
+                            <div class="search-input-wrapper">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="search-tasks" class="form-control" placeholder="Search tasks...">
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-icon-only" id="btn-clear-filters" title="Clear Filters">
+                            <i data-lucide="rotate-ccw"></i>
+                        </button>
+                    </div>
+
+                    <!-- Kanban Columns -->
+                    <div class="kanban-board" id="kanban-board-container">
+                        <!-- Columns will be dynamically populated -->
+                    </div>
+                </section>
+
+                <!-- 3. TIMELINE PAGE -->
+                <section class="page-section" id="page-timeline">
+                    <div class="timeline-card">
+                        <div class="timeline-header-actions">
+                            <p class="info-text"><i data-lucide="info" class="inline-icon"></i> Only tasks with due dates are displayed on the timeline.</p>
+                        </div>
+                        <div class="timeline-wrapper" id="gantt-timeline-container">
+                            <!-- Gantt chart will be dynamically drawn via SVG -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. DEPENDENCIES PAGE -->
+                <section class="page-section" id="page-dependencies">
+                    <div class="dependency-card">
+                        <div class="dependency-header">
+                            <p class="info-text"><i data-lucide="info" class="inline-icon"></i> Interactive visualization of task dependencies. Drag nodes to reposition them.</p>
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="show-isolated-tasks" class="custom-checkbox">
+                                <label for="show-isolated-tasks">Show isolated tasks (no dependencies)</label>
+                            </div>
+                        </div>
+                        <div class="canvas-wrapper">
+                            <canvas id="dependency-canvas"></canvas>
+                            <div class="canvas-legend">
+                                <span class="legend-item"><span class="legend-dot todo"></span>To Do</span>
+                                <span class="legend-item"><span class="legend-dot progress"></span>In Progress</span>
+                                <span class="legend-item"><span class="legend-dot done"></span>Done</span>
+                                <span class="legend-item"><span class="legend-dot blocked"></span>Blocked</span>
+                                <span class="legend-item"><span class="legend-dot abandoned"></span>Abandoned</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. IMPORT/EXPORT PAGE -->
+                <section class="page-section" id="page-sync">
+                    <div class="sync-grid">
+                        <div class="sync-card">
+                            <div class="card-icon"><i data-lucide="upload-cloud"></i></div>
+                            <h3>Import Tasks</h3>
+                            <p>Upload a CSV file containing your tasks. Ideal for importing data from your existing Streamlit app.</p>
+                            <div class="file-drop-zone" id="csv-drop-zone">
+                                <i data-lucide="file-spreadsheet"></i>
+                                <p>Drag and drop CSV here or click to select</p>
+                                <input type="file" id="csv-file-input" accept=".csv" class="hidden-file-input">
+                            </div>
+                            <div class="import-preview hidden" id="import-preview-container">
+                                <h4>File Loaded: <span id="preview-file-name">file.csv</span></h4>
+                                <p id="preview-row-count">0 tasks found.</p>
+                                <button class="btn btn-primary" id="btn-confirm-import">Proceed with Import</button>
+                            </div>
+                        </div>
+                        <div class="sync-card">
+                            <div class="card-icon"><i data-lucide="download-cloud"></i></div>
+                            <h3>Export Tasks</h3>
+                            <p>Download your task list as a CSV file to share or archive, or as a JSON file for complete database backups.</p>
+                            <div class="export-actions">
+                                <button class="btn btn-primary" id="btn-export-csv">
+                                    <i data-lucide="file-spreadsheet"></i> Export as CSV
+                                </button>
+                                <button class="btn btn-secondary" id="btn-export-json">
+                                    <i data-lucide="file-json"></i> Export as JSON
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. SETTINGS PAGE -->
+                <section class="page-section" id="page-settings">
+                    <div class="settings-container">
+                        <!-- Neon DB Sync Settings -->
+                        <div class="settings-card">
+                            <h3><i data-lucide="database"></i> Neon DB PostgreSQL Integration</h3>
+                            <p class="card-description">Synchronize your tasks directly with your Neon DB serverless instance. Credentials are securely stored only in your browser's local storage.</p>
+                            
+                            <form id="neon-settings-form" class="settings-form">
+                                <div class="form-group">
+                                    <label for="neon-conn-string">Neon DB Connection String</label>
+                                    <input type="password" id="neon-conn-string" class="form-control" placeholder="postgres://user:password@ep-xxxx.neon.tech/neondb?sslmode=require">
+                                    <span class="help-text">Direct Connection URI from Neon Dashboard (ensure SSL mode is required).</span>
+                                </div>
+                                <div class="form-actions-inline">
+                                    <button type="button" class="btn btn-secondary" id="btn-test-neon">Test Connection</button>
+                                    <button type="submit" class="btn btn-primary" id="btn-save-neon">Save & Sync</button>
+                                    <button type="button" class="btn btn-danger hidden" id="btn-disconnect-neon">Disconnect</button>
+                                </div>
+                                <div class="conn-feedback hidden" id="neon-conn-feedback"></div>
+                            </form>
+                        </div>
+
+                        <!-- General & Danger Zone -->
+                        <div class="settings-card">
+                            <h3><i data-lucide="shield-alert" class="text-danger"></i> Maintenance & Danger Zone</h3>
+                            <p class="card-description">Perform database operations, archive past tasks, or reset all storage.</p>
+                            <div class="settings-actions-grid">
+                                <div class="action-row">
+                                    <div class="action-desc">
+                                        <h4>Archive Old Completed Tasks (14+ Days)</h4>
+                                        <p>Move Done/Abandoned tasks older than 14 days to the archive to keep things clean.</p>
+                                    </div>
+                                    <button class="btn btn-secondary" id="btn-archive-tasks">Archive Tasks</button>
+                                </div>
+                                <div class="action-row">
+                                    <div class="action-desc">
+                                        <h4>Delete All Tasks</h4>
+                                        <p class="text-danger">Permanently purge all tasks from local storage and the database.</p>
+                                    </div>
+                                    <button class="btn btn-danger" id="btn-clear-all-tasks">Purge Storage</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- TASK DIALOG MODAL (Add/Edit Tasks) -->
+    <div class="modal-overlay hidden" id="task-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">New Task</h3>
+                <button class="btn-close" id="btn-close-modal"><i data-lucide="x"></i></button>
+            </div>
+            <form id="task-form">
+                <input type="hidden" id="task-id">
+                <div class="modal-body">
+                    <div class="form-grid">
+                        <div class="form-group span-2">
+                            <label for="task-title">Task Title <span class="required">*</span></label>
+                            <input type="text" id="task-title" class="form-control" required placeholder="What needs to be done?">
+                        </div>
+                        <div class="form-group">
+                            <label for="task-group">Group <span class="required">*</span></label>
+                            <select id="task-group" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-status">Status <span class="required">*</span></label>
+                            <select id="task-status" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-grade">Priority Grade</label>
+                            <select id="task-grade" class="form-control">
+                                <option value="A - Critical">A - Critical</option>
+                                <option value="B - Important">B - Important</option>
+                                <option value="C - Medium">C - Medium</option>
+                                <option value="D - Low">D - Low</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-due">Due Date</label>
+                            <input type="date" id="task-due" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="task-time">Time Estimate</label>
+                            <input type="text" id="task-time" class="form-control" placeholder="e.g. 30m, 2h">
+                        </div>
+                        <div class="form-group">
+                            <label for="task-impact">Value Impact</label>
+                            <input type="text" id="task-impact" class="form-control" placeholder="High, $$, etc.">
+                        </div>
+                        <div class="form-group span-2">
+                            <label for="task-deps">Depends On</label>
+                            <select id="task-deps" class="form-control select-multiple" multiple placeholder="Select dependency tasks...">
+                            </select>
+                        </div>
+                        <div class="form-group span-2">
+                            <label for="task-notes">Notes</label>
+                            <textarea id="task-notes" class="form-control" rows="4" placeholder="Additional details, markdown support..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-task">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-task">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="app.js"></script>
+</body>
+</html>
