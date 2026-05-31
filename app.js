@@ -187,6 +187,10 @@ async function loadTasks() {
     if (neonConnectionString) {
         try {
             updateDbIndicator(true, "Connecting...");
+            
+            // Ensure schema tables exist on the database
+            await initializeNeonSchema();
+            
             const result = await queryNeon("SELECT * FROM prioritized_tasks ORDER BY created_at DESC;");
             
             // Map rows back to objects
